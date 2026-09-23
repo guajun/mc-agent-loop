@@ -173,9 +173,11 @@ class LoopTests(unittest.IsolatedAsyncioTestCase):
             LocalApiClient(port=self.port),
             log=lambda _message: None,
         )
-        reply = await loop.once("@codex ping")
+        # one-shot turns need no trigger, duplicate guard or cooldown
+        reply = await loop.once("ping")
         self.assertEqual(reply, "[echo]: ping")
         self.assertEqual(self.bridge.chats(), ["[echo]: ping"])
+        self.assertEqual(await loop.once("ping"), "[echo]: ping")
 
     async def test_submit_drops_when_backlog_is_full(self) -> None:
         config = self.make_config(queue_size=1)

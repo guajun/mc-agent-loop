@@ -96,7 +96,8 @@ mc-agent-loop once "wrap up and report" --backend hermes --trigger @codex
 
 That is the hook for external schedulers, cron-style self-directed runs, or a
 one-off "trigger an experiment, wait, report" flow. The loop itself never
-schedules anything; it just answers.
+schedules anything; it just answers. Triggers, the duplicate guard and
+cooldowns do not apply to one-shot turns - they exist to keep chat civil.
 
 ## Behaviour worth knowing
 

@@ -182,8 +182,13 @@ class AgentLoop:
             except Exception as error:  # noqa: BLE001 - never let one message kill the loop
                 self.log(f"[mc-agent-loop] failed to handle chat: {error!r}")
 
-    async def handle_chat(self, data: dict[str, Any]) -> str | None:
-        """Filter, think, reply. Returns the reply that was sent, if any."""
+    async def handle_chat(self, data: dict[str, Any], origin: str = "chat") -> str | None:
+        """Filter, think, reply. Returns the reply that was sent, if any.
+
+        ``origin="manual"`` is used by :meth:`once`: a deliberate single turn
+        should not need a chat trigger, a duplicate guard or a cooldown.
+        """
+        manual = origin == "manual"
         raw = str(data.get("text") or "").strip()
         sender = clean_sender(str(data.get("sender") or ""))
         if not raw:
@@ -203,20 +208,22 @@ class AgentLoop:
 
         prompt = self.match_trigger(raw)
         if prompt is None:
-            return None
+            if not manual:
+                return None
+            prompt = raw
 
         key = (sender.casefold(), raw)
         now = time.monotonic()
-        if now - self._seen.get(key, 0.0) < 20.0:
-            return None
-        self._seen[key] = now
-        if len(self._seen) > 512:
-            cutoff = now - 60.0
-            self._seen = {seen: at for seen, at in self._seen.items() if at >= cutoff}
-
-        if not self._cooldown_allows(sender, now):
-            self.log(f"[mc-agent-loop] cooling down; skipping {sender or 'unknown'}")
-            return None
+        if not manual:
+            if now - self._seen.get(key, 0.0) < 20.0:
+                return None
+            self._seen[key] = now
+            if len(self._seen) > 512:
+                cutoff = now - 60.0
+                self._seen = {seen: at for seen, at in self._seen.items() if at >= cutoff}
+            if not self._cooldown_allows(sender, now):
+                self.log(f"[mc-agent-loop] cooling down; skipping {sender or 'unknown'}")
+                return None
 
         request = ChatRequest(
             text=prompt or "(no question, they just addressed you)",
@@ -305,7 +312,8 @@ class AgentLoop:
             await self.start(retry=False)
         try:
             return await self.handle_chat(
-                {"text": text, "sender": sender, "millis": int(time.time() * 1000)}
+                {"text": text, "sender": sender, "millis": int(time.time() * 1000)},
+                origin="manual",
             )
         finally:
             if connect:
