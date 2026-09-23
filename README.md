@@ -69,6 +69,16 @@ Start a Hermes API server, then point the loop at it. Defaults are
 | `HERMES_MODEL` | model name, default `hermes-agent` |
 | `HERMES_API_KEY` | bearer token, if your build requires one |
 
+Any of them can live in a file instead of the shell environment:
+
+```bash
+mc-agent-loop run --backend hermes --trigger @codex --env-file ../.env
+```
+
+`--env-file` falls back to `./.env` when it exists, and variables already set in
+the environment win. The key therefore never has to appear in a command line or
+in shell history.
+
 Hermes can call the bridge as a tool. Register the MCP front-end
 (`mc-bridge mcp`) in your Hermes MCP configuration and the model gets
 `mc_state`, `mc_entities`, `mc_command`, `mc_record_start`, `mc_events` and the

@@ -4,11 +4,30 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import os
 import sys
+from pathlib import Path
 
 from .backends import BACKENDS, build_backend
 from .config import DEFAULT_SYSTEM_PROMPT, LoopConfig
 from .loop import AgentLoop
+
+
+def load_env_file(path: str) -> None:
+    """Read KEY=VALUE lines; variables already set win.
+
+    Keeps the Hermes API key out of shell history and out of the command line:
+    ``mc-agent-loop run --env-file F:\\mc-agent\\.env``.
+    """
+    file = Path(path)
+    if not file.exists():
+        return
+    for line in file.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip())
 
 
 def _add_backend_options(parser: argparse.ArgumentParser) -> None:
@@ -140,20 +159,34 @@ def _cmd_backends(_args: argparse.Namespace) -> int:
     return 0
 
 
+def _add_env_option(parser: argparse.ArgumentParser) -> None:
+    """Accept --env-file before or after the sub-command, like the bridge CLI."""
+    suppress = len(parser.prog.split()) > 1
+    parser.add_argument(
+        "--env-file",
+        action="append",
+        default=argparse.SUPPRESS if suppress else [],
+        help="file of KEY=VALUE lines to load first (default: ./.env when present)",
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="mc-agent-loop",
         description="Wake on chat, ask a backend, answer in game.",
     )
+    _add_env_option(parser)
     sub = parser.add_subparsers(dest="command", required=True)
 
     run = sub.add_parser("run", help="stay connected and answer chat")
+    _add_env_option(run)
     _add_backend_options(run)
     _add_config_options(run)
     run.add_argument("--no-retry", action="store_true", help="exit instead of waiting for the bridge")
     run.set_defaults(func=_cmd_run)
 
     once = sub.add_parser("once", help="answer a single prompt and exit")
+    _add_env_option(once)
     once.add_argument("text")
     once.add_argument("--sender", default="")
     _add_backend_options(once)
@@ -168,6 +201,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    for path in args.env_file or [".env"]:
+        load_env_file(path)
     try:
         return int(args.func(args) or 0)
     except KeyboardInterrupt:
