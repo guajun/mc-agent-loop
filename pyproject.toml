@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mc-agent-loop"
+version = "0.1.0"
+description = "Chat-driven agent loop that connects any LLM backend to the mc-agent bridge."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = ["mc-agent-bridge>=0.1.0"]
+
+[project.scripts]
+mc-agent-loop = "mc_agent_loop.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
