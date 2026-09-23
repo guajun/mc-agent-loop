@@ -24,6 +24,7 @@ from .config import LoopConfig
 
 _FORMAT_RE = re.compile(r"\u00a7.")
 _CONTENT_RE = re.compile(r"content='([^']*)'")
+_PROFILE_RE = re.compile(r"\bname=([^,}\]]+)")
 _QUOTED_RE = re.compile(r"['\"]([^'\"]{1,64})['\"]")
 _WHITESPACE_RE = re.compile(r"\s+")
 
@@ -31,13 +32,19 @@ _WHITESPACE_RE = re.compile(r"\s+")
 def clean_sender(raw: str) -> str:
     """Best-effort display name from whatever the mod handed us.
 
-    The mod stringifies a text component, so the sender may arrive as
-    ``LiteralComponent{content='name', ...}`` rather than as ``name``.
+    The mod stringifies whatever the server sent: a text component
+    (``LiteralComponent{content='name', ...}``) in single player, or a
+    ``GameProfile[id=..., name=name, properties={...}]`` on a server. Both have
+    to collapse to a name, because the loop compares it against its own player
+    name to avoid answering itself.
     """
     if not raw:
         return ""
     text = _FORMAT_RE.sub("", raw)
     match = _CONTENT_RE.search(text)
+    if match:
+        return _WHITESPACE_RE.sub(" ", match.group(1)).strip()
+    match = _PROFILE_RE.search(text)
     if match:
         return _WHITESPACE_RE.sub(" ", match.group(1)).strip()
     match = _QUOTED_RE.search(text)

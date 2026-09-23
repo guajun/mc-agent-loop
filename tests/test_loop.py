@@ -43,6 +43,14 @@ class HelperTests(unittest.TestCase):
         self.assertEqual(clean_sender("player_one"), "player_one")
         self.assertEqual(clean_sender(""), "")
 
+    def test_clean_sender_extracts_a_game_profile_name(self) -> None:
+        # This is what a server sends: the whole profile, textures and all.
+        profile = (
+            "GameProfile[id=cbe8edd0-aeae-4e8d-9454-dd8c84ad5ea1, name=player_one, "
+            "properties={textures=[Property[name=textures, value=eyJ0aW1lc3RhbXAiOiJ4In0=]]}]"
+        )
+        self.assertEqual(clean_sender(profile), "player_one")
+
     def test_sanitize_reply_is_one_line(self) -> None:
         self.assertEqual(sanitize_reply("a\nb\r\nc"), "a b c")
         self.assertTrue(sanitize_reply("x" * 50, limit=10).endswith("\u2026"))
