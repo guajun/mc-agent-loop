@@ -294,7 +294,7 @@ class AgentLoop:
     async def _deliver(self, chunk: str) -> None:
         if self.config.reply_mode == "command":
             payload = json.dumps({"text": chunk}, ensure_ascii=False)
-            command = self.config.reply_command.replace("{json}", payload)
+            command = self.config.reply_command.replace("{json}", payload).replace("{text}", chunk)
             await self.client.call("command", {"command": command})
             return
         await self.client.call("chat", {"message": chunk})

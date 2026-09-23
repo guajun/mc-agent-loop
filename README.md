@@ -130,6 +130,15 @@ reply text component:
 mc-agent-loop run --reply-mode command --reply-command 'tellraw @a {json}'
 ```
 
+`{text}` is the same thing without the JSON wrapper, which is what a fake player
+needs to speak under its own name (the fake player has no command permission of
+its own, but the server can broadcast for it):
+
+```bash
+mc-agent-loop run --reply-mode command \
+  --reply-command 'execute as deepseek run say {text}'
+```
+
 ## CLI reference
 
 ```
