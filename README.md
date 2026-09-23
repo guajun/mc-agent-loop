@@ -1,5 +1,7 @@
 # mc-agent-loop
 
+📖 Part of **mc-agent**; the guide lives at <https://guajun.github.io/mc-agent/>.
+
 A small, generic agent loop for Minecraft: it listens to chat through the
 `mc-agent-bridge`, wakes a backend when somebody addresses the agent, and posts
 the answer back into the game.
