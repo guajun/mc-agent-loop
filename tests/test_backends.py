@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import importlib.util
 import unittest
 
 from mc_agent_loop.backends import BACKENDS, build_backend
 from mc_agent_loop.backends.base import BackendError, ChatMessage, ChatRequest
-from mc_agent_loop.backends.codex import CodexBackend
 from mc_agent_loop.backends.echo import EchoBackend
 from mc_agent_loop.backends.hermes import HermesBackend
 
@@ -12,7 +12,7 @@ from mc_agent_loop.backends.hermes import HermesBackend
 def sample_request(**overrides) -> ChatRequest:
     values = {
         "text": "how fast is it going",
-        "raw_text": "@codex how fast is it going",
+        "raw_text": "@agent how fast is it going",
         "sender": "player_one",
         "history": (ChatMessage("user", "player_one: earlier"), ChatMessage("assistant", "42")),
         "system": "be brief",
@@ -23,9 +23,17 @@ def sample_request(**overrides) -> ChatRequest:
 
 class RegistryTests(unittest.TestCase):
     def test_known_backends(self) -> None:
-        self.assertEqual(sorted(BACKENDS), ["codex", "echo", "hermes"])
+        self.assertEqual(sorted(BACKENDS), ["echo", "hermes"])
         self.assertIsInstance(build_backend("echo"), EchoBackend)
         self.assertIsInstance(build_backend("hermes"), HermesBackend)
+
+    def test_codex_backend_is_gone(self) -> None:
+        self.assertNotIn("codex", BACKENDS)
+        with self.assertRaises(ValueError) as caught:
+            build_backend("codex")
+        self.assertIn("unknown backend 'codex'", str(caught.exception))
+        self.assertIn("echo, hermes", str(caught.exception))
+        self.assertIsNone(importlib.util.find_spec("mc_agent_loop.backends.codex"))
 
     def test_unknown_backend(self) -> None:
         with self.assertRaises(ValueError):
@@ -76,12 +84,3 @@ class HermesTests(unittest.TestCase):
             backend.parse_reply({"choices": []})
         with self.assertRaises(BackendError):
             backend.parse_reply({"choices": [{"message": {"content": ""}}]})
-
-
-class CodexTests(unittest.TestCase):
-    def test_prompt_includes_recent_history_only(self) -> None:
-        backend = CodexBackend(include_history=1)
-        prompt = backend.build_prompt(sample_request())
-        self.assertIn("player (player_one): how fast is it going", prompt)
-        self.assertNotIn("earlier", prompt)
-        self.assertIn("you: 42", prompt)

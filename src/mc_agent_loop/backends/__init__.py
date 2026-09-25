@@ -5,14 +5,12 @@ from __future__ import annotations
 from typing import Any
 
 from .base import Backend, BackendError, ChatMessage, ChatRequest
-from .codex import CodexBackend
 from .echo import EchoBackend
 from .hermes import HermesBackend
 
 BACKENDS = {
     "echo": EchoBackend,
     "hermes": HermesBackend,
-    "codex": CodexBackend,
 }
 
 

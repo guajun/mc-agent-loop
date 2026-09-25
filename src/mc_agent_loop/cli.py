@@ -41,14 +41,6 @@ def _add_backend_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--hermes-url", default=None, help="hermes API base URL")
     parser.add_argument("--hermes-model", default=None, help="hermes model name")
     parser.add_argument("--hermes-key", default=None, help="hermes API key")
-    parser.add_argument("--codex-bin", default=None, help="codex executable for the codex backend")
-    parser.add_argument("--codex-cwd", default=None, help="working directory for the codex backend")
-    parser.add_argument(
-        "--codex-arg",
-        action="append",
-        default=[],
-        help="extra argument for the codex backend (repeatable)",
-    )
 
 
 def _add_config_options(parser: argparse.ArgumentParser) -> None:
@@ -119,10 +111,6 @@ def _build_backend_from_args(args: argparse.Namespace):
             api_key=args.hermes_key,
             timeout=args.backend_timeout,
         )
-    elif args.backend == "codex":
-        options.update(executable=args.codex_bin, cwd=args.codex_cwd)
-        if args.codex_arg:
-            options["extra_args"] = tuple(args.codex_arg)
     return build_backend(args.backend, **options)
 
 
@@ -155,7 +143,6 @@ def _cmd_backends(_args: argparse.Namespace) -> int:
     print("available backends:")
     print("  echo    local stub, no model, used by the tests")
     print("  hermes  Nous Research hermes-agent via its OpenAI-compatible API (primary)")
-    print("  codex   Codex CLI, one process per reply (experimental)")
     return 0
 
 
