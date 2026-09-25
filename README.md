@@ -40,13 +40,13 @@ You also need the bridge daemon running (`mc-bridge run`) and the
 mc-bridge call state
 
 # 2. hear yourself think, no model involved
-mc-agent-loop run --backend echo --trigger @codex
+mc-agent-loop run --backend echo --trigger @agent
 
 # 3. the real thing
-mc-agent-loop run --backend hermes --trigger @codex
+mc-agent-loop run --backend hermes --trigger @agent
 ```
 
-Now typing `@codex what is your position?` in game chat gets an answer.
+Now typing `@agent what is your position?` in game chat gets an answer.
 
 By default the triggers are `@codex`, `@agent` and `!ai`; pass `--trigger`
 one or more times to replace them.
@@ -57,7 +57,13 @@ one or more times to replace them.
 | --- | --- | --- |
 | `hermes` | Nous Research **hermes-agent** over its OpenAI-compatible API | default; the primary runtime for this framework |
 | `echo` | local stub | no model, used by the tests |
-| `codex` | Codex CLI | experimental: one process per reply |
+
+> **Codex backend removed.** The loop no longer spawns a fresh `codex exec` per
+> reply - that gave a user-driven harness the wrong lifecycle. When the
+> Harness-neutral Toolkit/MCP interface is available, run Codex yourself and
+> connect it there (`mc-bridge mcp`); for unattended replies use `hermes`, and
+> `echo` for offline plumbing checks. Tracking:
+> [mc-agent#8](https://github.com/guajun/mc-agent/issues/8).
 
 ### Hermes
 
@@ -74,7 +80,7 @@ Start a Hermes API server, then point the loop at it. Defaults are
 Any of them can live in a file instead of the shell environment:
 
 ```bash
-mc-agent-loop run --backend hermes --trigger @codex --env-file ../.env
+mc-agent-loop run --backend hermes --trigger @agent --env-file ../.env
 ```
 
 `--env-file` falls back to `./.env` when it exists, and variables already set in
@@ -86,16 +92,6 @@ Hermes can call the bridge as a tool. Register the MCP front-end
 `mc_state`, `mc_entities`, `mc_command`, `mc_record_start`, `mc_events` and the
 rest - so it can look things up instead of guessing.
 
-### Codex (experimental)
-
-```bash
-mc-agent-loop run --backend codex --codex-bin codex --codex-cwd <workspace>
-```
-
-Each reply spawns a fresh `codex exec`, so replies are slower and the process
-has no memory of the previous turn beyond the short history the loop passes in.
-Useful for driving a Codex session from chat; not the recommended default.
-
 ## One-shot mode
 
 The agent does not have to be resident. Anything that can run a command can ask
@@ -103,7 +99,7 @@ for a single turn:
 
 ```bash
 mc-agent-loop once "summarise what you can see" --sender operator
-mc-agent-loop once "wrap up and report" --backend hermes --trigger @codex
+mc-agent-loop once "wrap up and report" --backend hermes --trigger @agent
 ```
 
 That is the hook for external schedulers, cron-style self-directed runs, or a
