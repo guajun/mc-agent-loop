@@ -7,7 +7,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from mc_agent_loop.cli import build_parser, load_env_file, main
+from mc_agent_loop.cli import _build_config, build_parser, load_env_file, main
+from mc_agent_loop.config import DEFAULT_TRIGGERS, LoopConfig
 
 
 class ParserTests(unittest.TestCase):
@@ -28,6 +29,27 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(args.backend, "echo")
         self.assertEqual(args.trigger, ["@bot"])
         self.assertEqual(args.api_port, 8765)
+
+    def test_default_trigger_is_harness_neutral(self) -> None:
+        self.assertEqual(DEFAULT_TRIGGERS, ("@agent",))
+        self.assertEqual(LoopConfig().triggers, ("@agent",))
+        config = _build_config(self.parser.parse_args(["run"]))
+        self.assertEqual(config.triggers, ("@agent",))
+        self.assertNotIn("@codex", config.triggers)
+
+    def test_repeated_trigger_flags_replace_the_default(self) -> None:
+        args = self.parser.parse_args(["run", "--trigger", "@bot", "--trigger", "!ai"])
+        self.assertEqual(args.trigger, ["@bot", "!ai"])
+        self.assertEqual(_build_config(args).triggers, ("@bot", "!ai"))
+
+    def test_run_help_names_only_the_default_trigger(self) -> None:
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output), contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit):
+                self.parser.parse_args(["run", "--help"])
+        help_text = output.getvalue()
+        self.assertIn("default: @agent", help_text)
+        self.assertNotIn("@codex", help_text)
 
     def test_codex_backend_is_rejected(self) -> None:
         with contextlib.redirect_stderr(io.StringIO()):

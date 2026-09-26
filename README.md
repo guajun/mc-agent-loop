@@ -40,16 +40,16 @@ You also need the bridge daemon running (`mc-bridge run`) and the
 mc-bridge call state
 
 # 2. hear yourself think, no model involved
-mc-agent-loop run --backend echo --trigger @agent
+mc-agent-loop run --backend echo
 
 # 3. the real thing
-mc-agent-loop run --backend hermes --trigger @agent
+mc-agent-loop run --backend hermes
 ```
 
 Now typing `@agent what is your position?` in game chat gets an answer.
 
-By default the triggers are `@codex`, `@agent` and `!ai`; pass `--trigger`
-one or more times to replace them.
+By default the trigger is `@agent`; pass `--trigger` one or more times to
+replace it, for example `--trigger @bot`.
 
 ## Backends
 
@@ -80,7 +80,7 @@ Start a Hermes API server, then point the loop at it. Defaults are
 Any of them can live in a file instead of the shell environment:
 
 ```bash
-mc-agent-loop run --backend hermes --trigger @agent --env-file ../.env
+mc-agent-loop run --backend hermes --env-file ../.env
 ```
 
 `--env-file` falls back to `./.env` when it exists, and variables already set in
@@ -99,7 +99,7 @@ for a single turn:
 
 ```bash
 mc-agent-loop once "summarise what you can see" --sender operator
-mc-agent-loop once "wrap up and report" --backend hermes --trigger @agent
+mc-agent-loop once "wrap up and report" --backend hermes
 ```
 
 That is the hook for external schedulers, cron-style self-directed runs, or a

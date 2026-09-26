@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 from .backends import BACKENDS, build_backend
-from .config import DEFAULT_SYSTEM_PROMPT, LoopConfig
+from .config import DEFAULT_SYSTEM_PROMPT, DEFAULT_TRIGGERS, LoopConfig
 from .loop import AgentLoop
 
 
@@ -50,7 +50,10 @@ def _add_config_options(parser: argparse.ArgumentParser) -> None:
         "--trigger",
         action="append",
         default=[],
-        help="chat prefix that addresses the agent (repeatable; replaces the defaults)",
+        help=(
+            "chat prefix that addresses the agent "
+            f"(default: {' '.join(DEFAULT_TRIGGERS)}; repeatable, replaces the default)"
+        ),
     )
     parser.add_argument("--ignore-sender", action="append", default=[])
     parser.add_argument("--self-name", default="", help="the agent's own player name")
