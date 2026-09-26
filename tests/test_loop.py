@@ -103,6 +103,23 @@ class LoopTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.bridge.chats(), ["[echo] player_one: what time is it"])
         self.assertEqual(loop.own_name, "Bot")
 
+    async def test_codex_is_not_a_default_trigger(self) -> None:
+        loop = await self.make_loop()
+        self.assertEqual(loop.config.triggers, ("@agent",))
+        self.bridge.push_chat("@codex hello", "player_one")
+        await asyncio.sleep(0.2)
+        self.assertEqual(self.bridge.chats(), [])
+
+    async def test_custom_trigger_replaces_the_default(self) -> None:
+        loop = await self.make_loop(config=self.make_config(triggers=("@custom", "!ai")))
+        self.bridge.push_chat("@custom what time is it", "player_one")
+        await wait_for(lambda: self.bridge.chats())
+        self.assertEqual(self.bridge.chats(), ["[echo] player_one: what time is it"])
+
+        self.bridge.push_chat("@agent ignored now", "player_one")
+        await asyncio.sleep(0.2)
+        self.assertEqual(len(self.bridge.chats()), 1)
+
     async def test_filters_other_chat(self) -> None:
         loop = await self.make_loop()
         self.bridge.push_chat("just chatting", "player_one")

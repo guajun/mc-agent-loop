@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+#: Harness-neutral chat prefixes that address the agent by default.
+DEFAULT_TRIGGERS: tuple[str, ...] = ("@agent",)
+
 DEFAULT_SYSTEM_PROMPT = (
     "You are an assistant attached to a Minecraft client through a bridge. "
     "Your replies are posted to in-game chat, so keep them short, plain, and "
@@ -17,7 +20,7 @@ class LoopConfig:
     api_port: int = 8765
 
     #: Case-insensitive prefixes that address the agent in chat.
-    triggers: tuple[str, ...] = ("@codex", "@agent", "!ai")
+    triggers: tuple[str, ...] = DEFAULT_TRIGGERS
     #: Never answer these senders (useful for other bots).
     ignore_senders: tuple[str, ...] = ()
     #: The agent's own player name, if the bridge cannot report it yet.
