@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 from .backends import BACKENDS, build_backend
-from .config import DEFAULT_SYSTEM_PROMPT, DEFAULT_TRIGGERS, LoopConfig
+from .config import DEFAULT_SYSTEM_PROMPT, DEFAULT_TRIGGERS, LoopConfig, load_triggers
 from .loop import AgentLoop
 
 
@@ -46,6 +46,15 @@ def _add_backend_options(parser: argparse.ArgumentParser) -> None:
 def _add_config_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--api-host", default="127.0.0.1")
     parser.add_argument("--api-port", type=int, default=8765)
+    parser.add_argument(
+        "--config",
+        default=None,
+        metavar="PATH",
+        help=(
+            "TOML file with a 'triggers' list of chat prefixes; validated when given, "
+            f"--trigger wins over it (default: built-in {' '.join(DEFAULT_TRIGGERS)})"
+        ),
+    )
     parser.add_argument(
         "--trigger",
         action="append",
@@ -84,6 +93,10 @@ def _build_config(args: argparse.Namespace) -> LoopConfig:
     config = LoopConfig()
     config.api_host = args.api_host
     config.api_port = args.api_port
+    if args.config is not None:
+        # An explicitly given file is always validated, even when --trigger
+        # overrides its values: a broken file must not pass silently.
+        config.triggers = load_triggers(args.config)
     if args.trigger:
         config.triggers = tuple(args.trigger)
     config.ignore_senders = tuple(args.ignore_sender)
