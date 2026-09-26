@@ -48,8 +48,45 @@ mc-agent-loop run --backend hermes
 
 Now typing `@agent what is your position?` in game chat gets an answer.
 
-By default the trigger is `@agent`; pass `--trigger` one or more times to
-replace it, for example `--trigger @bot`.
+## Trigger configuration
+
+By default the loop answers chat that contains `@agent`. There are two ways to
+change that, and both replace the built-in default:
+
+```bash
+# ad-hoc: repeat --trigger for several triggers
+mc-agent-loop run --trigger @bot --trigger '!ai'
+```
+
+For a setting that lives with the project, put the triggers in a small TOML
+file. Python 3.11 reads it with the standard library, so no extra dependency is
+needed:
+
+```toml
+# mc-agent-loop.toml
+triggers = ["@bot", "!ai"]
+```
+
+```bash
+mc-agent-loop run --backend hermes --config mc-agent-loop.toml
+```
+
+Priority, highest first:
+
+1. `--trigger` on the command line (repeatable).
+2. The `triggers` list in the file passed with `--config PATH`.
+3. The built-in default `@agent`.
+
+The file is read only when `--config PATH` is given, and only the `triggers`
+key is read - this is not a general configuration framework. An explicitly
+given file is always validated, even when `--trigger` overrides its values: a
+file that is missing, unreadable, not valid TOML, lacks `triggers`, or holds an
+empty list, non-string entries, or empty strings fails at startup with an error
+naming the file and the offending key. The loop never silently falls back to
+the default. Trigger entries are trimmed and must not be empty.
+
+Secrets do not belong in this file: the Hermes key and URL stay in the
+environment or an `--env-file`, as described below.
 
 ## Backends
 
@@ -140,7 +177,7 @@ mc-agent-loop run --reply-mode command \
 ## CLI reference
 
 ```
-mc-agent-loop run      [--backend NAME] [--trigger PREFIX]... [--api-port N] ...
+mc-agent-loop run      [--backend NAME] [--config PATH] [--trigger PREFIX]... [--api-port N] ...
 mc-agent-loop once     TEXT [--sender NAME] [--backend NAME] ...
 mc-agent-loop backends
 ```
