@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 from .backends import BACKENDS, build_backend
-from .config import DEFAULT_SYSTEM_PROMPT, LoopConfig
+from .config import DEFAULT_SYSTEM_PROMPT, DEFAULT_TRIGGERS, LoopConfig, load_triggers
 from .loop import AgentLoop
 
 
@@ -41,24 +41,28 @@ def _add_backend_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--hermes-url", default=None, help="hermes API base URL")
     parser.add_argument("--hermes-model", default=None, help="hermes model name")
     parser.add_argument("--hermes-key", default=None, help="hermes API key")
-    parser.add_argument("--codex-bin", default=None, help="codex executable for the codex backend")
-    parser.add_argument("--codex-cwd", default=None, help="working directory for the codex backend")
-    parser.add_argument(
-        "--codex-arg",
-        action="append",
-        default=[],
-        help="extra argument for the codex backend (repeatable)",
-    )
 
 
 def _add_config_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--api-host", default="127.0.0.1")
     parser.add_argument("--api-port", type=int, default=8765)
     parser.add_argument(
+        "--config",
+        default=None,
+        metavar="PATH",
+        help=(
+            "TOML file with a 'triggers' list of chat prefixes; validated when given, "
+            f"--trigger wins over it (default: built-in {' '.join(DEFAULT_TRIGGERS)})"
+        ),
+    )
+    parser.add_argument(
         "--trigger",
         action="append",
         default=[],
-        help="chat prefix that addresses the agent (repeatable; replaces the defaults)",
+        help=(
+            "chat prefix that addresses the agent "
+            f"(default: {' '.join(DEFAULT_TRIGGERS)}; repeatable, replaces the default)"
+        ),
     )
     parser.add_argument("--ignore-sender", action="append", default=[])
     parser.add_argument("--self-name", default="", help="the agent's own player name")
@@ -89,6 +93,10 @@ def _build_config(args: argparse.Namespace) -> LoopConfig:
     config = LoopConfig()
     config.api_host = args.api_host
     config.api_port = args.api_port
+    if args.config is not None:
+        # An explicitly given file is always validated, even when --trigger
+        # overrides its values: a broken file must not pass silently.
+        config.triggers = load_triggers(args.config)
     if args.trigger:
         config.triggers = tuple(args.trigger)
     config.ignore_senders = tuple(args.ignore_sender)
@@ -119,10 +127,6 @@ def _build_backend_from_args(args: argparse.Namespace):
             api_key=args.hermes_key,
             timeout=args.backend_timeout,
         )
-    elif args.backend == "codex":
-        options.update(executable=args.codex_bin, cwd=args.codex_cwd)
-        if args.codex_arg:
-            options["extra_args"] = tuple(args.codex_arg)
     return build_backend(args.backend, **options)
 
 
@@ -155,7 +159,6 @@ def _cmd_backends(_args: argparse.Namespace) -> int:
     print("available backends:")
     print("  echo    local stub, no model, used by the tests")
     print("  hermes  Nous Research hermes-agent via its OpenAI-compatible API (primary)")
-    print("  codex   Codex CLI, one process per reply (experimental)")
     return 0
 
 
